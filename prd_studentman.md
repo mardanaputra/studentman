@@ -19,7 +19,7 @@
 
 ### 2. Core Requirements & Rubric Compliance Matrix
 
-| No | Modul / Komponen | Spesifikasi Minimum Dokumen UTS | Target Implementasi StudyMate |
+| No | Modul / Komponen | Spesifikasi Minimum Dokumen UTS | Target Implementasi StudentMan |
 | :--- | :--- | :--- | :--- |
 | 1 | **Total Screen** | Minimal 6 screen fungsional (Splash tidak dihitung) | **7 Screen**: Home/Dashboard, Academic Calendar (API List), Calendar Event Detail, Task List (DB), Add Task (Form Create), Edit Task (Form Update), Profile Mahasiswa |
 | 2 | **Reusable Widgets** | Minimal 3 reusable custom widgets | 1. `TaskCardItem` <br> 2. `PriorityStatusBadge` <br> 3. `StateFeedbackPlaceholder` (Loading/Empty/Error) |
