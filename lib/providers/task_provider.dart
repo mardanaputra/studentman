@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/student_task_model.dart';
+import '../repositories/task_repository.dart';
 
 class TaskProvider extends ChangeNotifier {
+  final TaskRepository repository;
+
+  TaskProvider({TaskRepository? repository}) : repository = repository ?? TaskRepository();
+
   List<StudentTaskModel> _tasks = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -24,96 +29,91 @@ class TaskProvider extends ChangeNotifier {
   int get completedCount => _tasks.where((t) => t.taskStatus.toLowerCase() == 'selesai').length;
   int get totalCount => _tasks.length;
 
-  void setTasks(List<StudentTaskModel> taskList) {
-    _tasks = taskList;
-    _isLoading = false;
-    _errorMessage = null;
-    notifyListeners();
-  }
-
-  void setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void setError(String? error) {
-    _errorMessage = error;
-    _isLoading = false;
-    notifyListeners();
-  }
-
   void setStatusFilter(String status) {
     _selectedStatus = status;
     notifyListeners();
   }
 
-  void addTaskLocally(StudentTaskModel task) {
-    _tasks.insert(0, task);
-    notifyListeners();
-  }
-
-  void updateTaskLocally(StudentTaskModel updatedTask) {
-    final index = _tasks.indexWhere((t) => t.id == updatedTask.id);
-    if (index != -1) {
-      _tasks[index] = updatedTask;
-      notifyListeners();
-    }
-  }
-
-  void deleteTaskLocally(int taskId) {
-    _tasks.removeWhere((t) => t.id == taskId);
-    notifyListeners();
-  }
-
-  void toggleTaskStatusLocally(int taskId, bool isCompleted) {
-    final index = _tasks.indexWhere((t) => t.id == taskId);
-    if (index != -1) {
-      final current = _tasks[index];
-      _tasks[index] = current.copyWith(
-        taskStatus: isCompleted ? 'Selesai' : 'Pending',
-      );
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadInitialData() async {
+  Future<void> fetchTasks() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    _tasks = [
-      StudentTaskModel(
-        id: 1,
-        courseName: 'Workshop Pemrograman Mobile',
-        taskTitle: 'Implementasi Arsitektur UTS Mobile',
-        deadlineDate: '2026-11-08',
-        priority: 'Tinggi',
-        taskStatus: 'In Progress',
-        notes: 'Menerapkan clean architecture dengan Provider dan Supabase CRUD.',
-        createdAt: DateTime.now(),
-      ),
-      StudentTaskModel(
-        id: 2,
-        courseName: 'Rekayasa Perangkat Lunak',
-        taskTitle: 'Laporan Analisis Kebutuhan Perangkat Lunak',
-        deadlineDate: '2026-11-12',
-        priority: 'Sedang',
-        taskStatus: 'Pending',
-        notes: 'Menyelesaikan dokumen SRS bab 3 dan diagram UML.',
-        createdAt: DateTime.now(),
-      ),
-      StudentTaskModel(
-        id: 3,
-        courseName: 'Kecerdasan Buatan',
-        taskTitle: 'Tugas Eksperimen Model Klasifikasi',
-        deadlineDate: '2026-11-15',
-        priority: 'Rendah',
-        taskStatus: 'Selesai',
-        notes: 'Melakukan perbandingan akurasi Random Forest vs SVM.',
-        createdAt: DateTime.now(),
-      ),
-    ];
-    _isLoading = false;
-    notifyListeners();
+    try {
+      final fetched = await repository.getTasks();
+      _tasks = fetched;
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Gagal mengambil data dari database: $e';
+      _isLoading = false;
+      notifyListeners();
+    }
   }
+
+  Future<bool> createTask(StudentTaskModel task) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final created = await repository.insertTask(task);
+      _tasks.insert(0, created);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Gagal menyimpan tugas baru: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateTask(StudentTaskModel task) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final updated = await repository.updateTask(task);
+      final index = _tasks.indexWhere((t) => t.id == updated.id);
+      if (index != -1) {
+        _tasks[index] = updated;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Gagal memperbarui tugas: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteTask(int taskId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await repository.deleteTask(taskId);
+      _tasks.removeWhere((t) => t.id == taskId);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'Gagal menghapus tugas: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> toggleTaskStatus(int taskId, bool isCompleted) async {
+    final index = _tasks.indexWhere((t) => t.id == taskId);
+    if (index != -1) {
+      final updated = _tasks[index].copyWith(
+        taskStatus: isCompleted ? 'Selesai' : 'Pending',
+      );
+      await updateTask(updated);
+    }
+  }
+
+  Future<void> loadInitialData() => fetchTasks();
 }
