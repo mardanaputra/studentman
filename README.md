@@ -16,7 +16,7 @@
 ---
 
 ## 📱 Ringkasan Aplikasi
-**StudentMan** adalah aplikasi asisten pengingat tugas kuliah dan kalender akademik yang dirancang secara terintegrasi untuk membantu mahasiswa mengorganisasi aktivitas perkuliahan. Aplikasi ini menghubungkan agenda kalender publik (REST API) dengan manajemen database tugas pribadi berbasis PostgreSQL di Supabase menggunakan Clean Architecture berlapis.
+**StudentMan** adalah aplikasi asisten pengingat tugas kuliah dan kalender akademik yang dirancang secara terintegrasi untuk membantu mahasiswa mengKegiatan aktivitas perkuliahan. Aplikasi ini menghubungkan agenda kalender publik (REST API) dengan manajemen database tugas pribadi berbasis PostgreSQL di Supabase menggunakan Clean Architecture berlapis.
 
 ---
 

@@ -34,6 +34,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   late final TextEditingController _deadlineController;
   late final TextEditingController _notesController;
 
+  late String _selectedCategory;
   late String _priority;
   late String _status;
   bool _isSubmitting = false;
@@ -41,7 +42,14 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   @override
   void initState() {
     super.initState();
-    _courseController = TextEditingController(text: widget.courseName);
+    final isOrg = widget.courseName.startsWith('[Kegiatan]');
+    _selectedCategory = isOrg ? 'Kegiatan Kegiatan' : 'Tugas Kuliah';
+
+    final cleanCourse = widget.courseName
+        .replaceFirst('[Kegiatan] ', '')
+        .replaceFirst('[Kegiatan]', '');
+
+    _courseController = TextEditingController(text: cleanCourse);
     _titleController = TextEditingController(text: widget.title);
     _deadlineController = TextEditingController(text: widget.deadlineDate);
     _notesController = TextEditingController(text: widget.notes);
@@ -67,7 +75,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       lastDate: now.add(const Duration(days: 365)),
     );
     if (picked != null) {
-      final formatted = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      final formatted =
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       setState(() {
         _deadlineController.text = formatted;
       });
@@ -79,9 +88,14 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
     setState(() => _isSubmitting = true);
 
+    final rawCourse = _courseController.text.trim();
+    final finalCourse = _selectedCategory == 'Kegiatan Kegiatan'
+        ? '[Kegiatan] $rawCourse'
+        : rawCourse;
+
     final updatedTask = StudentTaskModel(
       id: widget.taskId,
-      courseName: _courseController.text.trim(),
+      courseName: finalCourse,
       taskTitle: _titleController.text.trim(),
       deadlineDate: _deadlineController.text.trim(),
       priority: _priority,
@@ -96,7 +110,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Perubahan tugas berhasil diperbarui di database!'),
+            content: Text('Perubahan berhasil diperbarui di database!'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -105,7 +119,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Gagal memperbarui tugas. Silakan periksa koneksi.'),
+            content: Text('Gagal memperbarui jadwal. Silakan periksa koneksi.'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -116,9 +130,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isOrg = _selectedCategory == 'Kegiatan Kegiatan';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Tugas'),
+        title: Text(isOrg ? 'Edit Agenda Kegiatan' : 'Edit Tugas'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -127,16 +143,44 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Segmented selector
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'Tugas Kuliah',
+                    icon: Icon(Icons.school_outlined),
+                    label: Text('Tugas Kuliah'),
+                  ),
+                  ButtonSegment(
+                    value: 'Kegiatan Kegiatan',
+                    icon: Icon(Icons.groups_rounded),
+                    label: Text('Kegiatan'),
+                  ),
+                ],
+                selected: {_selectedCategory},
+                onSelectionChanged: (newSelection) {
+                  setState(() {
+                    _selectedCategory = newSelection.first;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _courseController,
-                decoration: const InputDecoration(
-                  labelText: 'Mata Kuliah *',
-                  prefixIcon: Icon(Icons.school_outlined),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: isOrg
+                      ? 'Nama Kegiatan / Divisi *'
+                      : 'Mata Kuliah *',
+                  prefixIcon: Icon(
+                    isOrg ? Icons.groups_rounded : Icons.school_outlined,
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (val) {
                   if (val == null || val.trim().length < 3) {
-                    return 'Mata kuliah minimal 3 karakter';
+                    return isOrg
+                        ? 'Nama Kegiatan minimal 3 karakter'
+                        : 'Mata kuliah minimal 3 karakter';
                   }
                   return null;
                 },
@@ -144,14 +188,22 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Judul Tugas *',
-                  prefixIcon: Icon(Icons.assignment_outlined),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: isOrg
+                      ? 'Nama Agenda / Kegiatan *'
+                      : 'Judul Tugas *',
+                  prefixIcon: Icon(
+                    isOrg
+                        ? Icons.event_available_rounded
+                        : Icons.assignment_outlined,
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (val) {
                   if (val == null || val.trim().length < 5) {
-                    return 'Judul tugas minimal 5 karakter';
+                    return isOrg
+                        ? 'Nama kegiatan minimal 5 karakter'
+                        : 'Judul tugas minimal 5 karakter';
                   }
                   return null;
                 },
@@ -162,7 +214,9 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 readOnly: true,
                 onTap: _pickDeadline,
                 decoration: InputDecoration(
-                  labelText: 'Tenggat Waktu (Deadline) *',
+                  labelText: isOrg
+                      ? 'Tanggal Pelaksanaan Kegiatan *'
+                      : 'Tenggat Waktu (Deadline) *',
                   prefixIcon: const Icon(Icons.calendar_today_outlined),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.date_range_rounded),
@@ -172,7 +226,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return 'Pilih tenggat waktu';
+                    return 'Pilih tanggal kegiatan/deadline';
                   }
                   return null;
                 },
@@ -188,9 +242,18 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Rendah', child: Text('Rendah')),
-                        DropdownMenuItem(value: 'Sedang', child: Text('Sedang')),
-                        DropdownMenuItem(value: 'Tinggi', child: Text('Tinggi')),
+                        DropdownMenuItem(
+                          value: 'Rendah',
+                          child: Text('Rendah'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Sedang',
+                          child: Text('Sedang'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Tinggi',
+                          child: Text('Tinggi'),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _priority = val);
@@ -206,9 +269,18 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Pending', child: Text('Pending')),
-                        DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
-                        DropdownMenuItem(value: 'Selesai', child: Text('Selesai')),
+                        DropdownMenuItem(
+                          value: 'Pending',
+                          child: Text('Pending / Rencana'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'In Progress',
+                          child: Text('In Progress / Berlangsung'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Selesai',
+                          child: Text('Selesai'),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _status = val);
@@ -221,10 +293,12 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
               TextFormField(
                 controller: _notesController,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Catatan Tambahan',
+                decoration: InputDecoration(
+                  labelText: isOrg
+                      ? 'Catatan / Rundown Agenda'
+                      : 'Catatan Tambahan',
                   alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 24),
@@ -237,10 +311,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Icon(Icons.check_circle_outline_rounded),
-                  label: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'),
+                  label: Text(
+                    _isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan',
+                  ),
                 ),
               ),
             ],

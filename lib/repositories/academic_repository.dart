@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../models/academic_event_model.dart';
 import '../services/api_service.dart';
 
@@ -9,45 +10,42 @@ class AcademicRepository {
   Future<List<AcademicEventModel>> getAcademicEvents() async {
     final List<AcademicEventModel> events = [];
 
-    // Standard academic schedule
-    final standardEvents = [
+    // Agenda resmi kalender akademik kampus TRPL
+    final academicMilestones = [
       AcademicEventModel(
-        id: 'uts-2026',
+        id: 'uts-semester-ganjil',
         title: 'Pekan Ujian Tengah Semester (UTS)',
         eventDate: '2026-11-10',
         category: 'Akademik',
-        description: 'Pelaksanaan UTS Semester Ganjil TA 2026/2027 seluruh program studi TRPL.',
+        description: 'Pelaksanaan UTS Semester Ganjil TA 2026/2027 seluruh mata kuliah TRPL.',
       ),
       AcademicEventModel(
-        id: 'project-uts-mobile',
-        title: 'Batas Pengumpulan Project Workshop Mobile',
-        eventDate: '2026-11-14',
-        category: 'Tugas Kuliah',
-        description: 'Pengumpulan laporan, repository git minimal 16 commit, dan file APK rilis.',
-      ),
-      AcademicEventModel(
-        id: 'input-nilai-uts',
-        title: 'Batas Akhir Input Nilai UTS',
+        id: 'batas-input-nilai',
+        title: 'Batas Akhir Input Nilai UTS Dosen',
         eventDate: '2026-11-25',
         category: 'Akademik',
-        description: 'Dosen menginput nilai UTS ke sistem informasi akademik kampus.',
+        description: 'Batas akhir dosen pengampu menginput nilai hasil UTS ke sistem akademik.',
       ),
     ];
 
     try {
+      debugPrint('[AcademicRepository] Mengambil data hari libur dari REST API publik...');
       final rawHolidays = await apiService.fetchHolidays();
       final holidayEvents = rawHolidays
           .map((item) => AcademicEventModel.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList();
 
-      events.addAll(standardEvents);
-      events.addAll(holidayEvents);
+      debugPrint('[AcademicRepository] ✅ Berhasil memetakan ${holidayEvents.length} data libur dari REST API.');
 
+      events.addAll(holidayEvents);
+      events.addAll(academicMilestones);
+
+      // Urutkan tanggal secara kronologis
       events.sort((a, b) => a.eventDate.compareTo(b.eventDate));
       return events;
-    } catch (_) {
-      // Graceful fallback to offline standard academic events
-      return standardEvents;
+    } catch (e) {
+      debugPrint('[AcademicRepository] ⚠️ Gagal menghubungi REST API: $e. Menggunakan data offline.');
+      return academicMilestones;
     }
   }
 }

@@ -16,27 +16,33 @@ class PriorityStatusBadge extends StatelessWidget {
     if (color != null) return color!;
     final normalized = label.toLowerCase();
     if (normalized.contains('tinggi') || normalized.contains('high') || normalized.contains('terlambat')) {
-      return Colors.red;
+      return const Color(0xFFDC2626); // Modern Red
     }
     if (normalized.contains('sedang') || normalized.contains('medium') || normalized.contains('progress')) {
-      return Colors.orange;
+      return const Color(0xFFD97706); // Modern Amber / Orange
     }
-    if (normalized.contains('selesai') || normalized.contains('completed') || normalized.contains('rendah') || normalized.contains('low')) {
-      return Colors.green;
+    if (normalized.contains('selesai') || normalized.contains('completed')) {
+      return const Color(0xFF16A34A); // Modern Green
     }
-    return Colors.blue;
+    if (normalized.contains('rendah') || normalized.contains('low')) {
+      return const Color(0xFF64748B); // Slate
+    }
+    if (normalized.contains('organisasi')) {
+      return const Color(0xFF9333EA); // Purple
+    }
+    return const Color(0xFF2563EB); // Royal Blue
   }
 
   @override
   Widget build(BuildContext context) {
     final badgeColor = _resolveColor();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-        color: badgeColor.withValues(alpha: 0.12),
+        color: badgeColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: badgeColor.withValues(alpha: 0.4),
+          color: badgeColor.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
@@ -44,20 +50,21 @@ class PriorityStatusBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: 5,
+            height: 5,
             decoration: BoxDecoration(
               color: badgeColor,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 5),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: badgeColor,
+              letterSpacing: 0.1,
             ),
           ),
         ],

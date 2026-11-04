@@ -14,24 +14,44 @@ class AcademicEventModel {
   });
 
   factory AcademicEventModel.fromJson(Map<String, dynamic> json) {
-    // Handle both standardized academic event fields and public holiday API (api-harilibur)
-    final resolvedTitle = json['title'] ?? json['holiday_name'] ?? json['name'] ?? 'Agenda Akademik';
-    final resolvedDate = json['eventDate'] ?? json['event_date'] ?? json['holiday_date'] ?? json['date'] ?? '';
-    final isHoliday = json['is_national_holiday'] == true;
+    // 1. Ekstrak judul (mendukung nager.date, api-harilibur, dan mock json)
+    final resolvedTitle = json['localName'] ??
+        json['holiday_name'] ??
+        json['name'] ??
+        json['title'] ??
+        json['summary'] ??
+        'Agenda Akademik';
+
+    // 2. Ekstrak tanggal (format YYYY-MM-DD)
+    final resolvedDate = json['date'] ??
+        json['eventDate'] ??
+        json['holiday_date'] ??
+        json['event_date'] ??
+        '';
+
+    // 3. Tentukan kategori
+    final isHoliday = json['is_national_holiday'] == true ||
+        json['types'] != null ||
+        json['localName'] != null ||
+        json['holiday_name'] != null;
+
     final resolvedCategory = json['category'] ?? (isHoliday ? 'Libur Nasional' : 'Agenda Akademik');
+
+    // 4. Ekstrak deskripsi
     final resolvedDescription = json['description'] ??
         (isHoliday
             ? 'Hari Libur Nasional Indonesia: $resolvedTitle'
-            : 'Agenda akademik mahasiswa TRPL');
+            : 'Agenda resmi akademik perkuliahan TRPL');
+
     final resolvedId = json['id']?.toString() ??
         '${resolvedDate}_${resolvedTitle.hashCode}';
 
     return AcademicEventModel(
       id: resolvedId,
-      title: resolvedTitle,
-      eventDate: resolvedDate,
-      category: resolvedCategory,
-      description: resolvedDescription,
+      title: resolvedTitle.toString(),
+      eventDate: resolvedDate.toString(),
+      category: resolvedCategory.toString(),
+      description: resolvedDescription.toString(),
     );
   }
 

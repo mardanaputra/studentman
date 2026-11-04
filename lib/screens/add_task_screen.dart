@@ -7,12 +7,14 @@ class AddTaskScreen extends StatefulWidget {
   final String? initialTitle;
   final String? initialDeadline;
   final String? initialNotes;
+  final String initialCategory;
 
   const AddTaskScreen({
     super.key,
     this.initialTitle,
     this.initialDeadline,
     this.initialNotes,
+    this.initialCategory = 'Tugas Kuliah',
   });
 
   @override
@@ -26,6 +28,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   late final TextEditingController _deadlineController;
   late final TextEditingController _notesController;
 
+  late String _selectedCategory;
   String _priority = 'Sedang';
   String _status = 'Pending';
   bool _isSubmitting = false;
@@ -33,9 +36,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedCategory = widget.initialCategory;
     _courseController = TextEditingController();
     _titleController = TextEditingController(text: widget.initialTitle ?? '');
-    _deadlineController = TextEditingController(text: widget.initialDeadline ?? '');
+    _deadlineController = TextEditingController(
+      text: widget.initialDeadline ?? '',
+    );
     _notesController = TextEditingController(text: widget.initialNotes ?? '');
   }
 
@@ -57,7 +63,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       lastDate: now.add(const Duration(days: 365)),
     );
     if (picked != null) {
-      final formatted = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      final formatted =
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
       setState(() {
         _deadlineController.text = formatted;
       });
@@ -69,8 +76,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
     setState(() => _isSubmitting = true);
 
+    final rawCourse = _courseController.text.trim();
+    final finalCourse = _selectedCategory == 'Kegiatan Kegiatan'
+        ? '[Kegiatan] $rawCourse'
+        : rawCourse;
+
     final newTask = StudentTaskModel(
-      courseName: _courseController.text.trim(),
+      courseName: finalCourse,
       taskTitle: _titleController.text.trim(),
       deadlineDate: _deadlineController.text.trim(),
       priority: _priority,
@@ -84,9 +96,13 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     if (mounted) {
       setState(() => _isSubmitting = false);
       if (success) {
+        final successMsg = _selectedCategory == 'Kegiatan Kegiatan'
+            ? 'Agenda Kegiatan "$rawCourse" berhasil disimpan!'
+            : 'Tugas kuliah berhasil disimpan ke database!';
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tugas baru berhasil disimpan ke database!'),
+          SnackBar(
+            content: Text(successMsg),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -95,7 +111,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Gagal menyimpan tugas. Silakan periksa koneksi.'),
+            content: Text('Gagal menyimpan jadwal. Silakan periksa koneksi.'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -106,9 +122,11 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isOrg = _selectedCategory == 'Kegiatan Kegiatan';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tambah Tugas Baru'),
+        title: Text(isOrg ? 'Tambah Agenda Kegiatan' : 'Tambah Tugas Baru'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -117,45 +135,101 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Pemilihan Tipe Jadwal (Tugas Kuliah vs Kegiatan Kegiatan)
+              Text(
+                'Pilih Kategori Jadwal:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'Tugas Kuliah',
+                    icon: Icon(Icons.school_outlined),
+                    label: Text('Tugas Kuliah'),
+                  ),
+                  ButtonSegment(
+                    value: 'Kegiatan Kegiatan',
+                    icon: Icon(Icons.groups_rounded),
+                    label: Text('Kegiatan'),
+                  ),
+                ],
+                selected: {_selectedCategory},
+                onSelectionChanged: (newSelection) {
+                  setState(() {
+                    _selectedCategory = newSelection.first;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+              // Field 1: Mata Kuliah ATAU Kegiatan
               TextFormField(
                 controller: _courseController,
-                decoration: const InputDecoration(
-                  labelText: 'Mata Kuliah *',
-                  hintText: 'Contoh: Workshop Pemrograman Mobile',
-                  prefixIcon: Icon(Icons.school_outlined),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: isOrg
+                      ? 'Nama Kegiatan / Divisi *'
+                      : 'Mata Kuliah *',
+                  hintText: isOrg
+                      ? 'Contoh: BEM TRPL / HIMA / Divisi Acara'
+                      : 'Contoh: Workshop Pemrograman Mobile',
+                  prefixIcon: Icon(
+                    isOrg ? Icons.groups_rounded : Icons.school_outlined,
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (val) {
                   if (val == null || val.trim().length < 3) {
-                    return 'Mata kuliah minimal 3 karakter';
+                    return isOrg
+                        ? 'Nama Kegiatan minimal 3 karakter'
+                        : 'Mata kuliah minimal 3 karakter';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
+              // Field 2: Judul Tugas ATAU Nama Agenda
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Judul Tugas *',
-                  hintText: 'Contoh: Membuat Dokumen PRD dan CRUD',
-                  prefixIcon: Icon(Icons.assignment_outlined),
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: isOrg
+                      ? 'Nama Agenda / Kegiatan *'
+                      : 'Judul Tugas *',
+                  hintText: isOrg
+                      ? 'Contoh: Rapat Pleno Koordinasi Acara'
+                      : 'Contoh: Membuat Dokumen PRD dan CRUD',
+                  prefixIcon: Icon(
+                    isOrg
+                        ? Icons.event_available_rounded
+                        : Icons.assignment_outlined,
+                  ),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (val) {
                   if (val == null || val.trim().length < 5) {
-                    return 'Judul tugas minimal 5 karakter';
+                    return isOrg
+                        ? 'Nama kegiatan minimal 5 karakter'
+                        : 'Judul tugas minimal 5 karakter';
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
+              // Field 3: Tanggal
               TextFormField(
                 controller: _deadlineController,
                 readOnly: true,
                 onTap: _pickDeadline,
                 decoration: InputDecoration(
-                  labelText: 'Tenggat Waktu (Deadline) *',
-                  hintText: 'Pilih tanggal deadline',
+                  labelText: isOrg
+                      ? 'Tanggal Pelaksanaan Kegiatan *'
+                      : 'Tenggat Waktu (Deadline) *',
+                  hintText: isOrg
+                      ? 'Pilih tanggal kegiatan'
+                      : 'Pilih tanggal deadline',
                   prefixIcon: const Icon(Icons.calendar_today_outlined),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.date_range_rounded),
@@ -165,7 +239,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
-                    return 'Pilih tenggat waktu';
+                    return 'Pilih tanggal kegiatan/deadline';
                   }
                   return null;
                 },
@@ -181,9 +255,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Rendah', child: Text('Rendah')),
-                        DropdownMenuItem(value: 'Sedang', child: Text('Sedang')),
-                        DropdownMenuItem(value: 'Tinggi', child: Text('Tinggi')),
+                        DropdownMenuItem(
+                          value: 'Rendah',
+                          child: Text('Rendah'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Sedang',
+                          child: Text('Sedang'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Tinggi',
+                          child: Text('Tinggi'),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _priority = val);
@@ -199,9 +282,18 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         border: OutlineInputBorder(),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'Pending', child: Text('Pending')),
-                        DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
-                        DropdownMenuItem(value: 'Selesai', child: Text('Selesai')),
+                        DropdownMenuItem(
+                          value: 'Pending',
+                          child: Text('Pending / Rencana'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'In Progress',
+                          child: Text('In Progress / Berlangsung'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Selesai',
+                          child: Text('Selesai'),
+                        ),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _status = val);
@@ -214,11 +306,15 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               TextFormField(
                 controller: _notesController,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Catatan Tambahan',
-                  hintText: 'Detail spesifikasi atau link referensi...',
+                decoration: InputDecoration(
+                  labelText: isOrg
+                      ? 'Catatan / Rundown Agenda'
+                      : 'Catatan Tambahan',
+                  hintText: isOrg
+                      ? 'Lokasi ruangan, link Zoom, atau detail rundown...'
+                      : 'Detail spesifikasi atau link referensi...',
                   alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 24),
@@ -231,10 +327,21 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
-                      : const Icon(Icons.save_rounded),
-                  label: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Tugas'),
+                      : Icon(
+                          isOrg
+                              ? Icons.event_available_rounded
+                              : Icons.save_rounded,
+                        ),
+                  label: Text(
+                    _isSubmitting
+                        ? 'Menyimpan...'
+                        : (isOrg ? 'Simpan Agenda Kegiatan' : 'Simpan Tugas'),
+                  ),
                 ),
               ),
             ],
