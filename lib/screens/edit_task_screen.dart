@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/student_task_model.dart';
+import '../providers/task_provider.dart';
 
 class EditTaskScreen extends StatefulWidget {
   final int? taskId;
@@ -33,6 +36,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
   late String _priority;
   late String _status;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -70,12 +74,43 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     }
   }
 
-  void _updateTask() {
-    if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perubahan tugas berhasil diperbarui!')),
-      );
-      Navigator.pop(context);
+  Future<void> _updateTask() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isSubmitting = true);
+
+    final updatedTask = StudentTaskModel(
+      id: widget.taskId,
+      courseName: _courseController.text.trim(),
+      taskTitle: _titleController.text.trim(),
+      deadlineDate: _deadlineController.text.trim(),
+      priority: _priority,
+      taskStatus: _status,
+      notes: _notesController.text.trim(),
+    );
+
+    final success = await context.read<TaskProvider>().updateTask(updatedTask);
+
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Perubahan tugas berhasil diperbarui di database!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal memperbarui tugas. Silakan periksa koneksi.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -197,9 +232,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: _updateTask,
-                  icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: const Text('Simpan Perubahan'),
+                  onPressed: _isSubmitting ? null : _updateTask,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.check_circle_outline_rounded),
+                  label: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'),
                 ),
               ),
             ],
