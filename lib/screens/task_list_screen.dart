@@ -268,91 +268,98 @@ class _TaskListScreenState extends State<TaskListScreen> {
           ),
         ),
       ),
-      body: Builder(
-        builder: (context) {
-          if (taskProvider.isLoading) {
-            return const StateFeedbackPlaceholder.loading();
-          }
+      body: RefreshIndicator(
+        onRefresh: () => taskProvider.fetchTasks(),
+        child: Builder(
+          builder: (context) {
+            if (taskProvider.isLoading) {
+              return const StateFeedbackPlaceholder.loading(
+                title: 'Mengambil Data Tugas...',
+                message: 'Sedang menyinkronkan dengan database Supabase',
+              );
+            }
 
-          if (taskProvider.errorMessage != null) {
-            return StateFeedbackPlaceholder.error(
-              message: taskProvider.errorMessage!,
-              onRetry: () => taskProvider.loadInitialData(),
-            );
-          }
+            if (taskProvider.errorMessage != null) {
+              return StateFeedbackPlaceholder.error(
+                message: taskProvider.errorMessage!,
+                onRetry: () => taskProvider.fetchTasks(),
+              );
+            }
 
-          var tasks = taskProvider.filteredTasks;
-          if (_searchQuery.isNotEmpty) {
-            tasks = tasks.where((t) =>
-                t.taskTitle.toLowerCase().contains(_searchQuery) ||
-                t.courseName.toLowerCase().contains(_searchQuery)).toList();
-          }
+            var tasks = taskProvider.filteredTasks;
+            if (_searchQuery.isNotEmpty) {
+              tasks = tasks.where((t) =>
+                  t.taskTitle.toLowerCase().contains(_searchQuery) ||
+                  t.courseName.toLowerCase().contains(_searchQuery)).toList();
+            }
 
-          if (tasks.isEmpty) {
-            return StateFeedbackPlaceholder.empty(
-              title: 'Tidak Ada Tugas',
-              message: _searchQuery.isNotEmpty
-                  ? 'Tidak ada tugas yang cocok dengan pencarian "$_searchQuery".'
-                  : 'Tidak ada tugas yang sesuai dengan filter "${taskProvider.selectedStatus}".',
-              onRetry: () {
-                setState(() {
-                  _searchQuery = '';
-                  _searchController.clear();
-                });
-                taskProvider.setStatusFilter('Semua');
+            if (tasks.isEmpty) {
+              return StateFeedbackPlaceholder.empty(
+                title: 'Tidak Ada Tugas',
+                message: _searchQuery.isNotEmpty
+                    ? 'Tidak ada tugas yang cocok dengan pencarian "$_searchQuery".'
+                    : 'Tidak ada tugas yang sesuai dengan filter "${taskProvider.selectedStatus}".',
+                onRetry: () {
+                  setState(() {
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                  taskProvider.setStatusFilter('Semua');
+                },
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: tasks.length,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                return TaskCardItem(
+                  title: task.taskTitle,
+                  courseName: task.courseName,
+                  deadlineDate: task.deadlineDate,
+                  priority: task.priority,
+                  status: task.taskStatus,
+                  notes: task.notes,
+                  onTap: () => _showTaskDetailSheet(context, task),
+                  onStatusToggle: (val) async {
+                    if (task.id != null) {
+                      final newStatus = (val ?? false) ? 'Selesai' : 'Pending';
+                      await taskProvider.toggleTaskStatus(task.id!, val ?? false);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Status tugas "${task.taskTitle}" diubah ke $newStatus'),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  onEdit: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditTaskScreen(
+                          taskId: task.id,
+                          title: task.taskTitle,
+                          courseName: task.courseName,
+                          deadlineDate: task.deadlineDate,
+                          priority: task.priority,
+                          status: task.taskStatus,
+                          notes: task.notes,
+                        ),
+                      ),
+                    );
+                  },
+                  onDelete: () => _confirmDelete(context, task),
+                );
               },
             );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: tasks.length,
-            itemBuilder: (context, index) {
-              final task = tasks[index];
-              return TaskCardItem(
-                title: task.taskTitle,
-                courseName: task.courseName,
-                deadlineDate: task.deadlineDate,
-                priority: task.priority,
-                status: task.taskStatus,
-                notes: task.notes,
-                onTap: () => _showTaskDetailSheet(context, task),
-                onStatusToggle: (val) async {
-                  if (task.id != null) {
-                    final newStatus = (val ?? false) ? 'Selesai' : 'Pending';
-                    await taskProvider.toggleTaskStatus(task.id!, val ?? false);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Status tugas "${task.taskTitle}" diubah ke $newStatus'),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  }
-                },
-                onEdit: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditTaskScreen(
-                        taskId: task.id,
-                        title: task.taskTitle,
-                        courseName: task.courseName,
-                        deadlineDate: task.deadlineDate,
-                        priority: task.priority,
-                        status: task.taskStatus,
-                        notes: task.notes,
-                      ),
-                    ),
-                  );
-                },
-                onDelete: () => _confirmDelete(context, task),
-              );
-            },
-          );
-        },
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
