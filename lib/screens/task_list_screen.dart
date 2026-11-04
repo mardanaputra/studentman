@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/student_task_model.dart';
 import '../providers/task_provider.dart';
 import '../widgets/task_card_item.dart';
 import '../widgets/state_feedback_placeholder.dart';
@@ -8,6 +9,56 @@ import 'edit_task_screen.dart';
 
 class TaskListScreen extends StatelessWidget {
   const TaskListScreen({super.key});
+
+  void _confirmDelete(BuildContext context, StudentTaskModel task) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Hapus Tugas'),
+          ],
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus tugas "${task.taskTitle}"? Tindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              if (task.id != null) {
+                final success = await context.read<TaskProvider>().deleteTask(task.id!);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'Tugas berhasil dihapus dari database.'
+                            : 'Gagal menghapus tugas.',
+                      ),
+                      backgroundColor: success ? Colors.black87 : Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +126,7 @@ class TaskListScreen extends StatelessWidget {
                 onTap: () {},
                 onStatusToggle: (val) {
                   if (task.id != null) {
-                    taskProvider.toggleTaskStatusLocally(task.id!, val ?? false);
+                    taskProvider.toggleTaskStatus(task.id!, val ?? false);
                   }
                 },
                 onEdit: () {
@@ -94,11 +145,7 @@ class TaskListScreen extends StatelessWidget {
                     ),
                   );
                 },
-                onDelete: () {
-                  if (task.id != null) {
-                    taskProvider.deleteTaskLocally(task.id!);
-                  }
-                },
+                onDelete: () => _confirmDelete(context, task),
               );
             },
           );
