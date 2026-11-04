@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/academic_provider.dart';
+import 'providers/task_provider.dart';
 import 'screens/main_navigation_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const StudentManApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AcademicProvider()..loadInitialData()),
+        ChangeNotifierProvider(create: (_) => TaskProvider()..loadInitialData()),
+      ],
+      child: const StudentManApp(),
+    ),
+  );
 }
 
 class StudentManApp extends StatelessWidget {

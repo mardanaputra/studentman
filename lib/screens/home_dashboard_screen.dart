@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/academic_provider.dart';
+import '../providers/task_provider.dart';
 import '../widgets/responsive_layout_builder.dart';
+import 'academic_detail_screen.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -107,6 +111,7 @@ class HomeDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildStatSection(BuildContext context) {
+    final taskProvider = context.watch<TaskProvider>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -119,11 +124,11 @@ class HomeDashboardScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildStatCard(context, 'Pending', '0', Colors.orange, Icons.hourglass_top_rounded),
+            _buildStatCard(context, 'Pending', '${taskProvider.pendingCount}', Colors.orange, Icons.hourglass_top_rounded),
             const SizedBox(width: 12),
-            _buildStatCard(context, 'Progress', '0', Colors.blue, Icons.run_circle_outlined),
+            _buildStatCard(context, 'Progress', '${taskProvider.progressCount}', Colors.blue, Icons.run_circle_outlined),
             const SizedBox(width: 12),
-            _buildStatCard(context, 'Selesai', '0', Colors.green, Icons.check_circle_outline),
+            _buildStatCard(context, 'Selesai', '${taskProvider.completedCount}', Colors.green, Icons.check_circle_outline),
           ],
         ),
       ],
@@ -131,28 +136,72 @@ class HomeDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildUpcomingSection(BuildContext context) {
+    final academicProvider = context.watch<AcademicProvider>();
+    final upcomingEvents = academicProvider.events.take(2).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Agenda & Libur Terdekat (REST API)',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Agenda Terdekat',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            Text(
+              'Total: ${academicProvider.events.length}',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
-        Card(
-          elevation: 1,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: const ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.blueAccent,
-              child: Icon(Icons.event, color: Colors.white),
+        if (upcomingEvents.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text('Belum ada agenda terdekat.'),
             ),
-            title: Text('Kalender Akademik'),
-            subtitle: Text('Mengambil data jadwal libur dan agenda terkini...'),
+          )
+        else
+          ...upcomingEvents.map(
+            (item) => Card(
+              elevation: 1,
+              margin: const EdgeInsets.only(bottom: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.event_note_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text("${item.eventDate} • ${item.category}"),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AcademicDetailScreen(
+                        title: item.title,
+                        date: item.eventDate,
+                        category: item.category,
+                        description: item.description,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
-        ),
       ],
     );
   }
