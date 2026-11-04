@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/responsive_layout_builder.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -16,90 +17,143 @@ class HomeDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Welcome Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.primaryContainer,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Halo, Suniaramana 👋',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Tetap produktif dan kelola jadwal kuliahmu hari ini.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Ringkasan Statistik
-            Text(
-              'Statistik Tugas',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            Row(
+      body: ResponsiveLayoutBuilder(
+        compact: (context, constraints) => _buildCompactLayout(context),
+        wide: (context, constraints) => _buildWideLayout(context),
+      ),
+    );
+  }
+
+  Widget _buildCompactLayout(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBanner(context),
+          const SizedBox(height: 20),
+          _buildStatSection(context),
+          const SizedBox(height: 24),
+          _buildUpcomingSection(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWideLayout(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatCard(context, 'Pending', '0', Colors.orange, Icons.hourglass_top_rounded),
-                const SizedBox(width: 12),
-                _buildStatCard(context, 'Progress', '0', Colors.blue, Icons.run_circle_outlined),
-                const SizedBox(width: 12),
-                _buildStatCard(context, 'Selesai', '0', Colors.green, Icons.check_circle_outline),
+                _buildBanner(context),
+                const SizedBox(height: 24),
+                _buildStatSection(context),
               ],
             ),
-            const SizedBox(height: 24),
-            // Pengingat Terdekat
-            Text(
-              'Agenda & Libur Terdekat (REST API)',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 4,
+            child: _buildUpcomingSection(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            Theme.of(context).colorScheme.primaryContainer,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Halo, Suniaramana 👋',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-            const SizedBox(height: 12),
-            Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: const ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(Icons.event, color: Colors.white),
-                ),
-                title: Text('Kalender Akademik'),
-                subtitle: Text('Mengambil data jadwal libur dan agenda terkini...'),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Tetap produktif dan kelola jadwal kuliahmu hari ini.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Statistik Tugas Kuliah',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-            ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildStatCard(context, 'Pending', '0', Colors.orange, Icons.hourglass_top_rounded),
+            const SizedBox(width: 12),
+            _buildStatCard(context, 'Progress', '0', Colors.blue, Icons.run_circle_outlined),
+            const SizedBox(width: 12),
+            _buildStatCard(context, 'Selesai', '0', Colors.green, Icons.check_circle_outline),
           ],
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildUpcomingSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Agenda & Libur Terdekat (REST API)',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: const ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.blueAccent,
+              child: Icon(Icons.event, color: Colors.white),
+            ),
+            title: Text('Kalender Akademik'),
+            subtitle: Text('Mengambil data jadwal libur dan agenda terkini...'),
+          ),
+        ),
+      ],
     );
   }
 
