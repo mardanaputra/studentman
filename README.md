@@ -1,17 +1,153 @@
-# studentman
+# StudentMan - Student Task & Activity Schedule Reminder
+> **Ujian Tengah Semester (UTS) Workshop Pemrograman Mobile**  
+> Program Studi Teknologi Rekayasa Perangkat Lunak (TRPL)  
+> Jurusan Teknik Informatika - Universitas Pendidikan Ganesha
 
-A new Flutter project.
+---
 
-## Getting Started
+## 👨‍💻 Identitas Pengembang
+* **Nama**: Suniaramana Mardana Putra
+* **NIM**: 2455011006
+* **Kelas**: TRPL 5A
+* **Mata Kuliah**: Workshop Pemrograman Mobile
+* **Dosen Pengampu**: Dr. Ir. I Ketut Resika Arthana, S.T., M.Kom
+* **Asisten Dosen**: Made Yuda Sadewa, S.Pd.
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 📱 Ringkasan Aplikasi
+**StudentMan** adalah aplikasi asisten pengingat tugas kuliah dan kalender akademik yang dirancang secara terintegrasi untuk membantu mahasiswa mengorganisasi aktivitas perkuliahan. Aplikasi ini menghubungkan agenda kalender publik (REST API) dengan manajemen database tugas pribadi berbasis PostgreSQL di Supabase menggunakan Clean Architecture berlapis.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🎯 Rubrik Pemenuhan Penilaian UTS
+
+| No | Modul / Komponen | Target Implementasi StudentMan | Status |
+| :--- | :--- | :--- | :---: |
+| 1 | **Total Screen** | **7 Screen Fungsional**: Dashboard, Academic Calendar, Academic Detail, Task List, Add Task, Edit Task, Profile Mahasiswa. | ✅ Selesai |
+| 2 | **Reusable Widgets** | 1. `TaskCardItem`<br>2. `PriorityStatusBadge`<br>3. `StateFeedbackPlaceholder` | ✅ Selesai |
+| 3 | **Responsive Layout** | Adaptif terhadap layar Compact (< 600px, BottomNavBar, Single Column) dan Wide (>= 600px, NavigationRail, Dual Grid). Bebas `RenderFlex overflow`. | ✅ Selesai |
+| 4 | **REST API (GET)** | Integrasi HTTP GET dengan parsing JSON model `AcademicEventModel` dari endpoint Hari Libur & Agenda Akademik. | ✅ Selesai |
+| 5 | **Database Backend** | Backend Supabase PostgreSQL: Tabel `student_tasks` (8 field) dengan Full CRUD (Create, Read, Update, Delete) + Konfirmasi Hapus. | ✅ Selesai |
+| 6 | **State Management** | Provider Pattern (`TaskProvider` & `AcademicProvider`) dengan `ChangeNotifier` untuk reactive UI tanpa logic coupling. | ✅ Selesai |
+| 7 | **Clean Architecture** | Separasi 5 lapis: `Screen` $\rightarrow$ `Provider` $\rightarrow$ `Repository` $\rightarrow$ `Service` $\rightarrow$ `Model`. | ✅ Selesai |
+| 8 | **Form & User Feedback** | Validasi input teks, DatePicker tanggal deadline, Dropdown selector, SnackBar floating, Dialog konfirmasi hapus tugas, dan BottomSheet detail. | ✅ Selesai |
+| 9 | **Git Workflow** | 16 Commit bertahap sesuai spesifikasi milestone. | ✅ Selesai |
+
+---
+
+## 🏗️ Arsitektur Folder Proyek
+
+```text
+studentman/
+├── assets/
+│   ├── icons/
+│   └── images/
+├── lib/
+│   ├── models/
+│   │   ├── academic_event_model.dart       # Model JSON REST API
+│   │   └── student_task_model.dart         # Model CRUD Supabase
+│   ├── services/
+│   │   ├── api_service.dart                # HTTP client (GET)
+│   │   └── supabase_service.dart           # Supabase client backend
+│   ├── repositories/
+│   │   ├── academic_repository.dart        # Abstraksi data event & fallback
+│   │   └── task_repository.dart            # Abstraksi CRUD Supabase
+│   ├── providers/
+│   │   ├── academic_provider.dart          # State agenda/kalender
+│   │   └── task_provider.dart              # State CRUD tasks & filter
+│   ├── screens/
+│   │   ├── main_navigation_shell.dart      # NavigationBar & NavigationRail
+│   │   ├── home_dashboard_screen.dart      # Screen 1: Dashboard
+│   │   ├── academic_calendar_screen.dart   # Screen 2: List Agenda (API)
+│   │   ├── academic_detail_screen.dart     # Screen 3: Detail Agenda
+│   │   ├── task_list_screen.dart           # Screen 4: List Tasks (DB)
+│   │   ├── add_task_screen.dart            # Screen 5: Form Add Task
+│   │   ├── edit_task_screen.dart           # Screen 6: Form Edit Task
+│   │   └── profile_screen.dart             # Screen 7: Info Mahasiswa
+│   ├── widgets/
+│   │   ├── task_card_item.dart             # Reusable Widget 1
+│   │   ├── priority_status_badge.dart      # Reusable Widget 2
+│   │   ├── state_feedback_placeholder.dart # Reusable Widget 3
+│   │   └── responsive_layout_builder.dart  # Responsive layout helper
+│   └── main.dart                           # Entry point & MultiProvider
+├── .env.example
+├── prd_studentman.md
+├── pubspec.yaml
+└── README.md
+```
+
+---
+
+## 🗄️ Skema Database Supabase (`student_tasks`)
+
+Jalankan query DDL berikut di menu **SQL Editor** pada project dashboard Supabase:
+
+```sql
+CREATE TABLE student_tasks (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  course_name VARCHAR(100) NOT NULL,
+  task_title VARCHAR(150) NOT NULL,
+  deadline_date VARCHAR(50) NOT NULL,
+  priority VARCHAR(20) NOT NULL DEFAULT 'Sedang',
+  task_status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+  notes TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Kebijakan RLS (Row Level Security) untuk akses publik anonim
+ALTER TABLE student_tasks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow anon read, insert, update, delete"
+ON student_tasks FOR ALL
+USING (true)
+WITH CHECK (true);
+```
+
+---
+
+## ⚙️ Cara Menjalankan Aplikasi
+
+1. **Clone repository ini**:
+   ```bash
+   git clone https://github.com/mardanaputra/studentman.git
+   cd studentman
+   ```
+
+2. **Pasang dependensi Flutter**:
+   ```bash
+   flutter pub get
+   ```
+
+3. **(Opsional) Konfigurasi Supabase**:
+   Buka file `lib/services/supabase_service.dart`, perbarui `supabaseUrl` dan `supabaseAnonKey` dengan credentials dari Supabase project Anda. *(Catatan: Aplikasi tetap memiliki local fallback cache jika Supabase belum dikonfigurasi)*.
+
+4. **Jalankan aplikasi**:
+   ```bash
+   flutter run
+   ```
+
+5. **Build APK rilis**:
+   ```bash
+   flutter build apk --release
+   ```
+
+---
+
+## 📜 Riwayat Commit (Milestone 1 - 16)
+
+1. `Initialize Flutter UTS project`
+2. `Setup project architecture and folders`
+3. `Build initial application UI`
+4. `Implement responsive layouts`
+5. `Add application navigation`
+6. `Add application data models`
+7. `Implement application state management`
+8. `Integrate REST API`
+9. `Integrate backend database`
+10. `Implement create data feature`
+11. `Implement update data feature`
+12. `Implement delete data feature`
+13. `Add interaction and user feedback`
+14. `Add loading and error handling`
+15. `Improve UI and responsive behavior`
+16. `Finalize UTS mobile application`
