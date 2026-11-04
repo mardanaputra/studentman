@@ -4,6 +4,7 @@ import '../models/student_task_model.dart';
 import '../providers/task_provider.dart';
 import '../widgets/task_card_item.dart';
 import '../widgets/state_feedback_placeholder.dart';
+import '../widgets/responsive_layout_builder.dart';
 import 'add_task_screen.dart';
 import 'edit_task_screen.dart';
 
@@ -309,54 +310,25 @@ class _TaskListScreenState extends State<TaskListScreen> {
               );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: tasks.length,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return TaskCardItem(
-                  title: task.taskTitle,
-                  courseName: task.courseName,
-                  deadlineDate: task.deadlineDate,
-                  priority: task.priority,
-                  status: task.taskStatus,
-                  notes: task.notes,
-                  onTap: () => _showTaskDetailSheet(context, task),
-                  onStatusToggle: (val) async {
-                    if (task.id != null) {
-                      final newStatus = (val ?? false) ? 'Selesai' : 'Pending';
-                      await taskProvider.toggleTaskStatus(task.id!, val ?? false);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Status tugas "${task.taskTitle}" diubah ke $newStatus'),
-                            duration: const Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  onEdit: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditTaskScreen(
-                          taskId: task.id,
-                          title: task.taskTitle,
-                          courseName: task.courseName,
-                          deadlineDate: task.deadlineDate,
-                          priority: task.priority,
-                          status: task.taskStatus,
-                          notes: task.notes,
-                        ),
-                      ),
-                    );
-                  },
-                  onDelete: () => _confirmDelete(context, task),
-                );
-              },
+            return ResponsiveLayoutBuilder(
+              compact: (ctx, constraints) => ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: tasks.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemBuilder: (context, index) => _buildItem(context, tasks[index], taskProvider),
+              ),
+              wide: (ctx, constraints) => GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.8,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: tasks.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemBuilder: (context, index) => _buildItem(context, tasks[index], taskProvider),
+              ),
             );
           },
         ),
@@ -373,6 +345,50 @@ class _TaskListScreenState extends State<TaskListScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Tambah Tugas'),
       ),
+    );
+  }
+
+  Widget _buildItem(BuildContext context, StudentTaskModel task, TaskProvider taskProvider) {
+    return TaskCardItem(
+      title: task.taskTitle,
+      courseName: task.courseName,
+      deadlineDate: task.deadlineDate,
+      priority: task.priority,
+      status: task.taskStatus,
+      notes: task.notes,
+      onTap: () => _showTaskDetailSheet(context, task),
+      onStatusToggle: (val) async {
+        if (task.id != null) {
+          final newStatus = (val ?? false) ? 'Selesai' : 'Pending';
+          await taskProvider.toggleTaskStatus(task.id!, val ?? false);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Status tugas "${task.taskTitle}" diubah ke $newStatus'),
+                duration: const Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        }
+      },
+      onEdit: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EditTaskScreen(
+              taskId: task.id,
+              title: task.taskTitle,
+              courseName: task.courseName,
+              deadlineDate: task.deadlineDate,
+              priority: task.priority,
+              status: task.taskStatus,
+              notes: task.notes,
+            ),
+          ),
+        );
+      },
+      onDelete: () => _confirmDelete(context, task),
     );
   }
 }

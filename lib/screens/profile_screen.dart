@@ -10,33 +10,57 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Profil Mahasiswa'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            const Center(
-              child: CircleAvatar(
-                radius: 48,
-                backgroundColor: Colors.blueAccent,
-                child: Icon(Icons.person, size: 54, color: Colors.white),
+            Center(
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 52,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    child: Icon(
+                      Icons.person_rounded,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check, size: 16, color: Colors.white),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
             const Text(
               'Suniaramana Mardana Putra',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
               'NIM: 2455011006 • Kelas TRPL 5A',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 24),
             Card(
+              elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: const Column(
                 children: [
                   ListTile(
                     leading: Icon(Icons.school_outlined, color: Colors.blue),
+                    title: Text('Program Studi'),
+                    subtitle: Text('Teknologi Rekayasa Perangkat Lunak (TRPL)'),
+                  ),
+                  Divider(height: 1),
+                  ListTile(
+                    leading: Icon(Icons.menu_book_rounded, color: Colors.deepPurple),
                     title: Text('Mata Kuliah'),
                     subtitle: Text('Workshop Pemrograman Mobile (UTS)'),
                   ),
@@ -57,27 +81,45 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Card(
+              elevation: 1,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: const Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Teknologi & Arsitektur',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    Row(
+                      children: [
+                        Icon(Icons.architecture_rounded, color: Colors.teal),
+                        SizedBox(width: 8),
+                        Text(
+                          'Teknologi & Arsitektur Aplikasi',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: 12),
                     Text(
-                      '• Flutter 3 & Material Design 3\n'
-                      '• Provider Pattern + ChangeNotifier\n'
-                      '• Supabase Backend (PostgreSQL CRUD)\n'
-                      '• REST API Integration (Academic Events & Holidays)\n'
-                      '• Responsive UI Layout (< 600px & >= 600px)',
-                      style: TextStyle(height: 1.5),
+                      '• Framework: Flutter 3 & Dart\n'
+                      '• UI Kit: Material Design 3 Responsive Layout (< 600px & >= 600px)\n'
+                      '• State Management: Provider Pattern + ChangeNotifier\n'
+                      '• Database: Supabase PostgreSQL (Full CRUD Operations)\n'
+                      '• Web API: HTTP GET Kalender Akademik & Libur Nasional\n'
+                      '• Clean Architecture: Screen -> Provider -> Repository -> Service',
+                      style: TextStyle(height: 1.6),
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: const ListTile(
+                leading: Icon(Icons.info_outline_rounded, color: Colors.blueAccent),
+                title: Text('Aplikasi StudentMan v1.0.0'),
+                subtitle: Text('UTS Pemrograman Mobile © 2026 Suniaramana Mardana Putra'),
               ),
             ),
           ],

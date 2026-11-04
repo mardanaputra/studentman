@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/academic_event_model.dart';
 import '../providers/academic_provider.dart';
 import '../widgets/state_feedback_placeholder.dart';
+import '../widgets/responsive_layout_builder.dart';
 import 'academic_detail_screen.dart';
 
 class AcademicCalendarScreen extends StatefulWidget {
@@ -127,60 +129,73 @@ class _AcademicCalendarScreenState extends State<AcademicCalendarScreen> {
               );
             }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: events.length,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                final item = events[index];
-                final isHoliday = item.category.toLowerCase().contains('libur');
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 1,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isHoliday
-                            ? Colors.red.withValues(alpha: 0.1)
-                            : Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        isHoliday ? Icons.beach_access_rounded : Icons.calendar_today_rounded,
-                        color: isHoliday ? Colors.red : Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    title: Text(
-                      item.title,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text("${item.eventDate} • ${item.category}"),
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AcademicDetailScreen(
-                            title: item.title,
-                            date: item.eventDate,
-                            category: item.category,
-                            description: item.description,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
+            return ResponsiveLayoutBuilder(
+              compact: (ctx, constraints) => ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: events.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemBuilder: (context, index) => _buildCard(context, events[index]),
+              ),
+              wide: (ctx, constraints) => GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 3.2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: events.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemBuilder: (context, index) => _buildCard(context, events[index]),
+              ),
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, AcademicEventModel item) {
+    final isHoliday = item.category.toLowerCase().contains('libur');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isHoliday
+                ? Colors.red.withValues(alpha: 0.1)
+                : Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            isHoliday ? Icons.beach_access_rounded : Icons.calendar_today_rounded,
+            color: isHoliday ? Colors.red : Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        title: Text(
+          item.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text("${item.eventDate} • ${item.category}"),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AcademicDetailScreen(
+                title: item.title,
+                date: item.eventDate,
+                category: item.category,
+                description: item.description,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
