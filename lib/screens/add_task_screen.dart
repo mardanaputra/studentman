@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/student_task_model.dart';
+import '../providers/task_provider.dart';
 
 class AddTaskScreen extends StatefulWidget {
   final String? initialTitle;
@@ -25,6 +28,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   String _priority = 'Sedang';
   String _status = 'Pending';
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -60,12 +64,43 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     }
   }
 
-  void _saveTask() {
-    if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tugas berhasil ditambahkan!')),
-      );
-      Navigator.pop(context);
+  Future<void> _saveTask() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() => _isSubmitting = true);
+
+    final newTask = StudentTaskModel(
+      courseName: _courseController.text.trim(),
+      taskTitle: _titleController.text.trim(),
+      deadlineDate: _deadlineController.text.trim(),
+      priority: _priority,
+      taskStatus: _status,
+      notes: _notesController.text.trim(),
+      createdAt: DateTime.now(),
+    );
+
+    final success = await context.read<TaskProvider>().createTask(newTask);
+
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tugas baru berhasil disimpan ke database!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan tugas. Silakan periksa koneksi.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 
@@ -191,9 +226,15 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
-                  onPressed: _saveTask,
-                  icon: const Icon(Icons.save_rounded),
-                  label: const Text('Simpan Tugas'),
+                  onPressed: _isSubmitting ? null : _saveTask,
+                  icon: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.save_rounded),
+                  label: Text(_isSubmitting ? 'Menyimpan...' : 'Simpan Tugas'),
                 ),
               ),
             ],
